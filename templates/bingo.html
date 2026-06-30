@@ -1,10 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
+<body data-is-admin="{{ 'true' if current_user.is_admin else 'false' }}">
 <div class="main-layout">
-    <!-- Sidebar (optional left panel) -->
+    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <h3>Progression</h3>
         <div id="progress-list"></div>
+
+        <hr style="border-color: var(--border-color); margin: 1rem 0;">
+
+        <h3>Événements</h3>
+        <div id="events-list"></div>
+        <div id="add-event-section" style="margin-top: 0.5rem;">
+            <input type="text" id="new-event-text" placeholder="Nouvel événement" style="width: 100%; padding: 0.3rem; margin-bottom: 0.3rem;">
+            <select id="new-event-type" style="width: 100%; padding: 0.3rem; margin-bottom: 0.3rem;">
+                <option value="daily">Journalier</option>
+                <option value="weekly">Hebdomadaire</option>
+            </select>
+            <button id="add-event-btn" style="width: 100%; background: var(--cyan); color: #000; border: none; padding: 0.3rem;">Ajouter</button>
+        </div>
     </div>
 
     <!-- Main content -->
@@ -12,7 +26,6 @@
         <div class="header">
             <button id="toggle-sidebar">☰</button>
             <h1>Bingo {{ current_user.username }}</h1>
-            <button id="admin-btn" style="display: none;">⚙️ Gérer événements</button>
             <a href="{{ url_for('logout') }}">Déconnexion</a>
         </div>
 
@@ -47,23 +60,6 @@
                 {% endfor %}
             </div>
         </section>
-    </div>
-</div>
-
-<!-- Admin modal (hidden by default) -->
-<div id="admin-modal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2>Gestion des événements</h2>
-        <div id="event-list"></div>
-        <form id="add-event-form">
-            <input type="text" id="new-event-text" placeholder="Texte de l'événement" required>
-            <select id="new-event-type">
-                <option value="daily">Journalier</option>
-                <option value="weekly">Hebdomadaire</option>
-            </select>
-            <button type="submit">Ajouter</button>
-        </form>
     </div>
 </div>
 {% endblock %}

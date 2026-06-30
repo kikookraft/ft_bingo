@@ -217,3 +217,48 @@ body {
     .sidebar { width: 180px; }
     .bingo-cell { font-size: 0.75rem; padding: 6px 3px; }
 }
+
+/* ---------- Bingo dots ---------- */
+.bingo-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+.dot-bingo {
+    background: var(--neon-green);
+    box-shadow: 0 0 4px var(--neon-green);
+}
+.dot-no-bingo {
+    background: var(--danger);
+    box-shadow: 0 0 4px var(--danger);
+}
+
+/* ---------- Event list ---------- */
+.event-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+.event-item .inactive {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+}
+.delete-event-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--danger);
+    font-size: 1rem;
+}
+#add-event-section input,
+#add-event-section select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
