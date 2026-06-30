@@ -4,22 +4,41 @@
 <div class="main-layout">
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-        <h3>Progression</h3>
-        <div id="progress-list"></div>
+    <h3>Progression</h3>
+    <div id="progress-list"></div>
 
-        <hr style="border-color: var(--border-color); margin: 1rem 0;">
+    <hr style="border-color: var(--border-color); margin: 1rem 0;">
 
-        <h3>Événements</h3>
-        <div id="events-list"></div>
-        <div id="add-event-section" style="margin-top: 0.5rem;">
-            <input type="text" id="new-event-text" placeholder="Nouvel événement" style="width: 100%; padding: 0.3rem; margin-bottom: 0.3rem;">
-            <select id="new-event-type" style="width: 100%; padding: 0.3rem; margin-bottom: 0.3rem;">
-                <option value="daily">Journalier</option>
-                <option value="weekly">Hebdomadaire</option>
-            </select>
-            <button id="add-event-btn" style="width: 100%; background: var(--cyan); color: #000; border: none; padding: 0.3rem;">Ajouter</button>
+    <!-- Journalier collapsible -->
+    <div class="collapsible-section">
+        <div class="collapsible-header" data-target="daily-events">
+            <span class="toggle-icon">▶</span>
+            <h4>Événements Journaliers</h4>
+        </div>
+        <div class="collapsible-body" id="daily-events">
+            <div class="events-sublist" id="daily-events-list"></div>
+            <div class="add-event-form">
+                <input type="text" class="add-event-input" data-type="daily" placeholder="Nouvel événement…">
+                <button class="add-event-btn" data-type="daily">+</button>
+            </div>
         </div>
     </div>
+
+    <!-- Hebdomadaire collapsible -->
+    <div class="collapsible-section">
+        <div class="collapsible-header" data-target="weekly-events">
+            <span class="toggle-icon">▶</span>
+            <h4>Événements Hebdomadaires</h4>
+        </div>
+        <div class="collapsible-body" id="weekly-events">
+            <div class="events-sublist" id="weekly-events-list"></div>
+            <div class="add-event-form">
+                <input type="text" class="add-event-input" data-type="weekly" placeholder="Nouvel événement…">
+                <button class="add-event-btn" data-type="weekly">+</button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Main content -->
     <div class="content">

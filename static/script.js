@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.checked !== undefined) {
                 cell.classList.toggle('checked', data.checked);
             }
-            // Bingo message handled via WebSocket
         });
     });
 
@@ -36,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---------- WebSocket: event list update ----------
     socket.on('event_changed', (events) => {
-        renderEvents(events);
+        renderAllEvents(events);
     });
 
     function showBingoMessage(msg) {
@@ -46,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { alertDiv.style.display = 'none'; }, 8000);
     }
 
-    // ---------- Progress rendering ----------
+    // ---------- Progress rendering (unchanged) ----------
     function renderProgress(progress) {
         const list = document.getElementById('progress-list');
         list.innerHTML = '';
@@ -69,50 +68,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ---------- Events rendering ----------
-    function renderEvents(events) {
-        const container = document.getElementById('events-list');
+    // ---------- Events rendering (split by type) ----------
+    function renderAllEvents(events) {
+        const dailyEvents = events.filter(e => e.event_type === 'daily');
+        const weeklyEvents = events.filter(e => e.event_type === 'weekly');
+        renderEventSublist('daily-events-list', dailyEvents);
+        renderEventSublist('weekly-events-list', weeklyEvents);
+    }
+
+    function renderEventSublist(containerId, events) {
+        const container = document.getElementById(containerId);
         container.innerHTML = '';
         events.forEach(ev => {
             const div = document.createElement('div');
             div.className = 'event-item';
             div.innerHTML = `
-                <span class="${ev.is_active ? '' : 'inactive'}">${ev.text} (${ev.event_type === 'daily' ? 'J' : 'H'})</span>
+                <span class="${ev.is_active ? '' : 'inactive'}">${ev.text}</span>
                 ${isAdmin ? '<button class="delete-event-btn" data-id="'+ev.id+'">🗑️</button>' : ''}
             `;
             container.appendChild(div);
         });
         // Attach delete handlers
-        document.querySelectorAll('.delete-event-btn').forEach(btn => {
+        container.querySelectorAll('.delete-event-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const eventId = btn.dataset.id;
                 const res = await fetch('/api/events/' + eventId, { method: 'DELETE' });
                 if (!res.ok) alert('Erreur suppression');
-                // List will be refreshed via socket
             });
         });
     }
 
-    // Add event button
-    document.getElementById('add-event-btn').addEventListener('click', async () => {
-        const text = document.getElementById('new-event-text').value.trim();
-        const type = document.getElementById('new-event-type').value;
+    // ---------- Collapsible logic ----------
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const targetId = header.dataset.target;
+            const body = document.getElementById(targetId);
+            header.classList.toggle('open');
+            body.classList.toggle('open');
+        });
+    });
+
+    // ---------- Add event (button + Enter key) ----------
+    function addEvent(type, inputElement) {
+        const text = inputElement.value.trim();
         if (!text) return;
-        const res = await fetch('/api/events', {
+        fetch('/api/events', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({text, event_type: type, is_active: true})
+        }).then(res => {
+            if (res.ok) inputElement.value = '';
         });
-        if (res.ok) {
-            document.getElementById('new-event-text').value = '';
-            // List updated via socket
-        }
+    }
+
+    document.querySelectorAll('.add-event-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.dataset.type;
+            const input = document.querySelector(`.add-event-input[data-type="${type}"]`);
+            addEvent(type, input);
+        });
     });
 
-    // Admin status from body data attribute
+    document.querySelectorAll('.add-event-input').forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const type = input.dataset.type;
+                addEvent(type, input);
+            }
+        });
+    });
+
+    // ---------- Admin status ----------
     const isAdmin = document.body.dataset.isAdmin === 'true';
 
-    // Initial load
+    // ---------- Initial data load ----------
     fetch('/api/progress').then(res => res.json()).then(renderProgress);
-    fetch('/api/events').then(res => res.json()).then(renderEvents);
+    fetch('/api/events').then(res => res.json()).then(renderAllEvents);
 });

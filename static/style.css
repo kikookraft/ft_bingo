@@ -262,3 +262,88 @@ body {
     border: 1px solid var(--border-color);
     color: var(--text-primary);
 }
+
+/* ---------- Collapsible sections ---------- */
+.collapsible-section {
+    margin-top: 0.8rem;
+}
+.collapsible-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border-color);
+    user-select: none;
+    color: var(--text-primary);
+}
+.collapsible-header:hover {
+    color: var(--cyan);
+}
+.collapsible-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+.toggle-icon {
+    margin-right: 6px;
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+    width: 14px;
+    text-align: center;
+}
+.collapsible-header.open .toggle-icon {
+    transform: rotate(90deg);
+}
+.collapsible-body {
+    display: none;
+    padding-left: 8px;
+    margin-top: 0.3rem;
+}
+.collapsible-body.open {
+    display: block;
+}
+
+/* ---------- Event sub-list ---------- */
+.events-sublist {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 0.5rem;
+}
+.add-event-form {
+    display: flex;
+    gap: 4px;
+}
+.add-event-input {
+    flex: 1;
+    padding: 0.3rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+.add-event-btn {
+    background: var(--cyan);
+    color: #000;
+    border: none;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+/* Adjust existing event items for sublists */
+.event-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.15rem 0;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.delete-event-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--danger);
+    font-size: 0.9rem;
+}
+.inactive {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+}
