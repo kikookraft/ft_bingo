@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="login-container">
+    <h1>Connexion</h1>
+    <form method="POST" action="{{ url_for('login') }}">
+        <label for="username">Nom d'utilisateur :</label>
+        <input type="text" id="username" name="username" required autofocus>
+        <button type="submit">Se connecter</button>
+    </form>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+</div>
+{% endblock %}

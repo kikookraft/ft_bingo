@@ -1,0 +1,219 @@
+:root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --border-color: #30363d;
+    --text-primary: #c9d1d9;
+    --text-secondary: #8b949e;
+    --cyan: #00e5ff;
+    --neon-green: #39ff14;
+    --checked-dark: #0a2e1f;
+    --cell-bg: #1c2128;
+    --cell-hover: #252b33;
+    --danger: #f85149;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+/* ---------- Login ---------- */
+.login-container {
+    max-width: 400px;
+    margin: 100px auto;
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+}
+.login-container h1 { color: var(--cyan); margin-bottom: 1rem; }
+.login-container label { display: block; margin-bottom: 0.5rem; color: var(--text-secondary); }
+.login-container input {
+    width: 100%; padding: 0.5rem; background: var(--bg-primary);
+    border: 1px solid var(--border-color); border-radius: 4px;
+    color: var(--text-primary); margin-bottom: 1rem;
+}
+.login-container button {
+    background: var(--cyan); color: #000; border: none;
+    padding: 0.6rem 1.5rem; border-radius: 4px; font-weight: bold; cursor: pointer;
+}
+.error { color: var(--danger); margin-top: 0.5rem; }
+
+.flash {
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+    text-align: center;
+}
+.flash.info {
+    background: var(--cyan);
+    color: #000;
+}
+
+/* ---------- Layout ---------- */
+.main-layout {
+    display: flex;
+    min-height: 100vh;
+}
+.sidebar {
+    width: 220px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    padding: 1rem;
+    transition: transform 0.3s;
+    overflow-y: auto;
+}
+.sidebar.hidden {
+    transform: translateX(-100%);
+    position: absolute;
+    z-index: 10;
+    height: 100%;
+}
+.content {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+}
+.header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.header a, .header button {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--cyan);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+}
+.header h1 { color: var(--neon-green); font-size: 1.5rem; }
+
+/* ---------- Bingo Grid ---------- */
+.grid-section {
+    margin-bottom: 2rem;
+}
+.grid-section h2 {
+    color: var(--cyan);
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3rem;
+}
+.bingo-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    background: var(--border-color);
+    border: 1px solid var(--border-color);
+}
+.bingo-cell {
+    position: relative;
+    background: var(--cell-bg);
+    padding: 8px 4px;
+    text-align: center;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    word-break: break-word;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    border: 1px solid transparent;
+}
+.bingo-cell:hover {
+    background: var(--cell-hover);
+    border-color: var(--cyan);
+}
+.bingo-cell.checked {
+    background: var(--checked-dark);
+    border-color: var(--neon-green);
+    color: var(--neon-green);
+}
+.bingo-cell .checkmark {
+    display: none;
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 1.2rem;
+    color: var(--neon-green);
+}
+.bingo-cell.checked .checkmark {
+    display: block;
+}
+
+/* ---------- Bingo Alert ---------- */
+.bingo-alert {
+    background: var(--neon-green);
+    color: #000;
+    padding: 0.8rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    display: none;
+    text-align: center;
+}
+
+/* ---------- Sidebar Progress ---------- */
+#progress-list {
+    list-style: none;
+    margin-top: 1rem;
+}
+#progress-list li {
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+.progress-bar {
+    height: 6px;
+    background: var(--bg-primary);
+    margin-top: 2px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: var(--cyan);
+    border-radius: 3px;
+}
+
+/* ---------- Admin Modal ---------- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+}
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    margin: 5% auto;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 8px;
+    color: var(--text-primary);
+}
+.close {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.close:hover { color: var(--danger); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .sidebar { width: 180px; }
+    .bingo-cell { font-size: 0.75rem; padding: 6px 3px; }
+}

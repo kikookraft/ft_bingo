@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar (optional left panel) -->
+    <div class="sidebar" id="sidebar">
+        <h3>Progression</h3>
+        <div id="progress-list"></div>
+    </div>
+
+    <!-- Main content -->
+    <div class="content">
+        <div class="header">
+            <button id="toggle-sidebar">☰</button>
+            <h1>Bingo {{ current_user.username }}</h1>
+            <button id="admin-btn" style="display: none;">⚙️ Gérer événements</button>
+            <a href="{{ url_for('logout') }}">Déconnexion</a>
+        </div>
+
+        <div id="bingo-message" class="bingo-alert"></div>
+
+        <!-- Daily grid -->
+        <section class="grid-section">
+            <h2>Grille Journalière</h2>
+            <div class="bingo-grid" data-grid-id="{{ daily_grid.id }}">
+                {% for cell in daily_cells %}
+                <div class="bingo-cell {% if cell.checked %}checked{% endif %}"
+                     data-cell-id="{{ cell.id }}"
+                     data-row="{{ cell.row }}" data-col="{{ cell.col }}">
+                    <span class="cell-text">{{ cell.event.text }}</span>
+                    <span class="checkmark">✓</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Weekly grid -->
+        <section class="grid-section">
+            <h2>Grille Hebdomadaire</h2>
+            <div class="bingo-grid" data-grid-id="{{ weekly_grid.id }}">
+                {% for cell in weekly_cells %}
+                <div class="bingo-cell {% if cell.checked %}checked{% endif %}"
+                     data-cell-id="{{ cell.id }}"
+                     data-row="{{ cell.row }}" data-col="{{ cell.col }}">
+                    <span class="cell-text">{{ cell.event.text }}</span>
+                    <span class="checkmark">✓</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Admin modal (hidden by default) -->
+<div id="admin-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Gestion des événements</h2>
+        <div id="event-list"></div>
+        <form id="add-event-form">
+            <input type="text" id="new-event-text" placeholder="Texte de l'événement" required>
+            <select id="new-event-type">
+                <option value="daily">Journalier</option>
+                <option value="weekly">Hebdomadaire</option>
+            </select>
+            <button type="submit">Ajouter</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

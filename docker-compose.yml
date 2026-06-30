@@ -1,0 +1,29 @@
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: bingo
+      POSTGRES_PASSWORD: bingo
+      POSTGRES_DB: bingo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - bingo-net
+
+  app:
+    build: .
+    ports:
+      - "172.17.0.1:5042:5042"
+    environment:
+      env_file: .env
+    depends_on:
+      - db
+    networks:
+      - bingo-net
+
+volumes:
+  pgdata:
+
+networks:
+  bingo-net:
