@@ -347,3 +347,12 @@ body {
     text-decoration: line-through;
     color: var(--text-secondary);
 }
+
+.edit-event-input {
+    background: var(--bg-primary);
+    border: 1px solid var(--cyan);
+    color: var(--text-primary);
+    padding: 2px 4px;
+    font-size: 0.8rem;
+    outline: none;
+}

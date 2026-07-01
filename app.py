@@ -35,7 +35,7 @@ with app.app_context():
     if Event.query.count() == 0:
         daily_events = [
             "discussion caca", "projet KO", "discusion canibalisme",
-            "gagner un point d'eval", "crash son pc (non voulu)",
+            "gagner un point d'éval", "crash son pc (non voulu)",
             "avancer son cursus (1 commit min)", "bus avec +10min de retard",
             "se prendre un skill issue", "a bu l'entièreté de sa gourde",
             "valider un nouveau poste", '"et c\'est ok!"', "mentionner factorio",
@@ -45,8 +45,9 @@ with app.app_context():
             "le groupe a commandé + de wrap que de Croc",
             "on apprend une dinguerie sur un politicien",
             "fuite de données sur un site français",
-            "discussion kink", "baptiste perd aux échecs",
-            '"Bonjour tout le monde" de cdutel', "claquette perdue"
+            "discussion kink", "baptiste perd aux échecs (groupe)",
+            '"Bonjour tout le monde" de cdutel', "win géoguesseur",
+            "se faire un café"
         ]
         weekly_events = [
             "foyers ouvert", "gildas est venu", "pluie",
@@ -281,6 +282,29 @@ def add_event():
     # Notify all clients
     socketio.emit('event_changed', get_events_list())
     return jsonify({'id': new_event.id})
+
+@app.route('/api/events/<int:event_id>', methods=['PUT'])
+@login_required
+def update_event(event_id):
+    # All logged-in users can edit text.
+    # If text is empty, delete the event instead.
+    event = Event.query.get_or_404(event_id)
+    data = request.get_json()
+    new_text = data.get('text', '').strip()
+
+    if new_text == '':
+        # Delete the event if text is empty
+        db.session.delete(event)
+        db.session.commit()
+        socketio.emit('event_changed', get_events_list())
+        return jsonify({'success': True, 'deleted': True})
+
+    # Otherwise, update text
+    event.text = new_text
+    # optionally allow updating event_type if you want, but we keep only text for now
+    db.session.commit()
+    socketio.emit('event_changed', get_events_list())
+    return jsonify({'success': True})
 
 @app.route('/api/events/<int:event_id>', methods=['DELETE'])
 @login_required

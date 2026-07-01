@@ -108,35 +108,79 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ---------- Add event (button + Enter key) ----------
-    function addEvent(type, inputElement) {
-        const text = inputElement.value.trim();
-        if (!text) return;
-        fetch('/api/events', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({text, event_type: type, is_active: true})
-        }).then(res => {
-            if (res.ok) inputElement.value = '';
-        });
-    }
+    // ---------- Events rendering (with inline editing) ----------
+function renderAllEvents(events) {
+    const dailyEvents = events.filter(e => e.event_type === 'daily');
+    const weeklyEvents = events.filter(e => e.event_type === 'weekly');
+    renderEventSublist('daily-events-list', dailyEvents);
+    renderEventSublist('weekly-events-list', weeklyEvents);
+}
 
-    document.querySelectorAll('.add-event-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const type = btn.dataset.type;
-            const input = document.querySelector(`.add-event-input[data-type="${type}"]`);
-            addEvent(type, input);
+function renderEventSublist(containerId, events) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    events.forEach(ev => {
+        const div = document.createElement('div');
+        div.className = 'event-item';
+        div.innerHTML = `
+            <span class="event-text ${ev.is_active ? '' : 'inactive'}" data-event-id="${ev.id}" title="Cliquez pour éditer">${ev.text}</span>
+            ${isAdmin ? '<button class="delete-event-btn" data-id="'+ev.id+'">🗑️</button>' : ''}
+        `;
+        container.appendChild(div);
+    });
+
+    // Attach inline editing to event texts
+    container.querySelectorAll('.event-text').forEach(span => {
+        span.addEventListener('click', function(e) {
+            if (this.classList.contains('editing')) return; // already editing
+            const eventId = this.dataset.eventId;
+            const originalText = this.textContent;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = originalText;
+            input.className = 'edit-event-input';
+            input.style.width = '100%';
+            // Replace span with input
+            this.replaceWith(input);
+            input.focus();
+            input.select();
+
+            // Save on Enter or blur
+            const save = async () => {
+                const newText = input.value.trim();
+                if (newText === originalText) {
+                    // No change, revert to span
+                    input.replaceWith(span);
+                    return;
+                }
+                // Send update (PUT with text; server will delete if empty)
+                const res = await fetch(`/api/events/${eventId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ text: newText })
+                });
+                // List will be refreshed via socket 'event_changed'
+            };
+
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    input.blur();
+                }
+            });
+            input.addEventListener('blur', save);
         });
     });
 
-    document.querySelectorAll('.add-event-input').forEach(input => {
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const type = input.dataset.type;
-                addEvent(type, input);
-            }
+    // Delete button (admin only) – unchanged
+    container.querySelectorAll('.delete-event-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const eventId = btn.dataset.id;
+            const res = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+            if (!res.ok) alert('Erreur suppression');
         });
     });
+}
 
     // ---------- Admin status ----------
     const isAdmin = document.body.dataset.isAdmin === 'true';
