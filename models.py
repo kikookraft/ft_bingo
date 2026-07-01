@@ -10,7 +10,6 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
 
     # Relationships
     grids = db.relationship('Grid', back_populates='user', lazy='dynamic')
@@ -37,7 +36,7 @@ class Grid(db.Model):
     week_start = db.Column(db.Date)  # used for weekly grids to know the Monday
 
     user = db.relationship('User', back_populates='grids')
-    cells = db.relationship('GridCell', back_populates='grid', cascade='all, delete-orphan')
+    cells = db.relationship('GridCell', back_populates='grid', cascade='all, delete, delete-orphan')
     wins = db.relationship('BingoWin', back_populates='grid')
 
 # ---------- Grid Cells ----------

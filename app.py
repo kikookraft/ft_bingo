@@ -3,16 +3,14 @@ import random
 from datetime import datetime, date, timedelta
 import pytz
 
-# Patch standard library before importing other modules (for eventlet)
 import eventlet
 eventlet.monkey_patch()
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, emit
 from models import db, User, Event, Grid, GridCell, BingoWin
 
-# ---------- App initialization ----------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-me-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
@@ -29,13 +27,24 @@ login_manager.login_view = 'login'
 
 FRANCE_TZ = pytz.timezone('Europe/Paris')
 
-# ---------- Auto‑seed on first run ----------
+@app.cli.command('export-events')
+def export_events():
+    """Export all events as a JSON file."""
+    import json
+    events = Event.query.all()
+    data = [{'text': e.text, 'event_type': e.event_type, 'is_active': e.is_active} for e in events]
+    # Write to a file inside the container (mounted volume later)
+    with open('events_export.json', 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    print(f"{len(data)} événements exportés dans events_export.json")
+
+# ---------- Auto‑seed ----------
 with app.app_context():
     db.create_all()
     if Event.query.count() == 0:
         daily_events = [
             "discussion caca", "projet KO", "discusion canibalisme",
-            "gagner un point d'éval", "crash son pc (non voulu)",
+            "gagner un point d'eval", "crash son pc (non voulu)",
             "avancer son cursus (1 commit min)", "bus avec +10min de retard",
             "se prendre un skill issue", "a bu l'entièreté de sa gourde",
             "valider un nouveau poste", '"et c\'est ok!"', "mentionner factorio",
@@ -45,9 +54,8 @@ with app.app_context():
             "le groupe a commandé + de wrap que de Croc",
             "on apprend une dinguerie sur un politicien",
             "fuite de données sur un site français",
-            "discussion kink", "baptiste perd aux échecs (groupe)",
-            '"Bonjour tout le monde" de cdutel', "win géoguesseur",
-            "se faire un café"
+            "discussion kink", "baptiste perd aux échecs",
+            '"Bonjour tout le monde" de cdutel', "claquette perdue"
         ]
         weekly_events = [
             "foyers ouvert", "gildas est venu", "pluie",
@@ -75,7 +83,7 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ---------- Helper functions (same as before) ----------
+# ---------- Helpers ----------
 def get_now_paris():
     return datetime.now(FRANCE_TZ)
 
@@ -154,7 +162,6 @@ def check_bingo(grid):
     return new_bingos
 
 def user_has_bingo(user, grid_type):
-    """Return True if the user has at least one bingo win for their current grid of given type."""
     grid = get_or_create_grid(user, grid_type)
     return BingoWin.query.filter_by(grid_id=grid.id).first() is not None
 
@@ -177,12 +184,9 @@ def login():
         else:
             user = User.query.filter_by(username=username).first()
             if user is None:
-                is_admin = (User.query.first() is None)
-                user = User(username=username, is_admin=is_admin)
+                user = User(username=username)
                 db.session.add(user)
                 db.session.commit()
-                if is_admin:
-                    flash("Vous êtes le premier utilisateur et avez été défini comme administrateur.", "info")
             login_user(user)
             return redirect(url_for('bingo'))
     return render_template('login.html', error=error)
@@ -201,7 +205,6 @@ def bingo():
     daily_cells = GridCell.query.filter_by(grid_id=daily_grid.id).order_by(GridCell.row, GridCell.col).all()
     weekly_cells = GridCell.query.filter_by(grid_id=weekly_grid.id).order_by(GridCell.row, GridCell.col).all()
 
-    # Build progress data for sidebar (bingo status added)
     users = User.query.all()
     progress = {}
     for u in users:
@@ -230,18 +233,15 @@ def toggle_cell():
     bingo_message = None
     if new_bingos:
         bingo_message = f"{current_user.username} a un BINGO ({cell.grid.grid_type}) !"
-        # Broadcast to all clients
         socketio.emit('bingo', {
             'username': current_user.username,
             'grid_type': cell.grid.grid_type,
             'message': bingo_message
         })
-        # Also emit progress update to reflect bingo dots
         socketio.emit('progress_update', get_progress_data())
-
     return jsonify({'checked': cell.checked, 'bingo_message': bingo_message})
 
-# ---------- Progress API (with bingo dots) ----------
+# ---------- Progress ----------
 def get_progress_data():
     users = User.query.all()
     progress = {}
@@ -261,12 +261,15 @@ def get_progress_data():
 def api_progress():
     return jsonify(get_progress_data())
 
-# ---------- Events management ----------
+# ---------- Events (sorted) ----------
+def get_events_list():
+    return [{'id': e.id, 'text': e.text, 'event_type': e.event_type, 'is_active': e.is_active}
+            for e in Event.query.order_by(Event.text).all()]
+
 @app.route('/api/events', methods=['GET'])
 @login_required
 def get_events():
-    events = Event.query.all()
-    return jsonify([{'id': e.id, 'text': e.text, 'event_type': e.event_type, 'is_active': e.is_active} for e in events])
+    return jsonify(get_events_list())
 
 @app.route('/api/events', methods=['POST'])
 @login_required
@@ -279,29 +282,24 @@ def add_event():
     )
     db.session.add(new_event)
     db.session.commit()
-    # Notify all clients
     socketio.emit('event_changed', get_events_list())
     return jsonify({'id': new_event.id})
 
 @app.route('/api/events/<int:event_id>', methods=['PUT'])
 @login_required
 def update_event(event_id):
-    # All logged-in users can edit text.
-    # If text is empty, delete the event instead.
     event = Event.query.get_or_404(event_id)
     data = request.get_json()
     new_text = data.get('text', '').strip()
-
     if new_text == '':
-        # Delete the event if text is empty
-        db.session.delete(event)
-        db.session.commit()
+        # Delete the event
+        affected_users = delete_event_and_regenerate(event)
         socketio.emit('event_changed', get_events_list())
+        # Notify affected clients to reload their grids
+        for user_id in affected_users:
+            socketio.emit('grid_regenerated', {'user_id': user_id}, room=f'user_{user_id}')
         return jsonify({'success': True, 'deleted': True})
-
-    # Otherwise, update text
     event.text = new_text
-    # optionally allow updating event_type if you want, but we keep only text for now
     db.session.commit()
     socketio.emit('event_changed', get_events_list())
     return jsonify({'success': True})
@@ -309,23 +307,83 @@ def update_event(event_id):
 @app.route('/api/events/<int:event_id>', methods=['DELETE'])
 @login_required
 def delete_event(event_id):
-    if not current_user.is_admin:
-        return jsonify({'error': 'Admin only'}), 403
     event = Event.query.get_or_404(event_id)
-    db.session.delete(event)
-    db.session.commit()
+    affected_users = delete_event_and_regenerate(event)
     socketio.emit('event_changed', get_events_list())
+    for user_id in affected_users:
+        socketio.emit('grid_regenerated', {'user_id': user_id}, room=f'user_{user_id}')
     return jsonify({'success': True})
 
-def get_events_list():
-    events = Event.query.all()
-    return [{'id': e.id, 'text': e.text, 'event_type': e.event_type, 'is_active': e.is_active} for e in events]
+def delete_event_and_regenerate(event):
+    """Delete event and regenerate current grids that used it. Returns list of affected user IDs."""
+    # Find all grids that are current (daily for today, weekly for current week)
+    now = get_now_paris()
+    today = now.date()
+    monday = get_monday(today)
 
-# ---------- SocketIO events ----------
+    # Grids that contain this event
+    cells = GridCell.query.filter_by(event_id=event.id).all()
+    affected_users = set()
+    grids_to_regen = []
+    for cell in cells:
+        grid = cell.grid
+        # Check if grid is current
+        if grid.grid_type == 'daily' and grid.created_at.date() == today:
+            grids_to_regen.append(grid)
+            affected_users.add(grid.user_id)
+        elif grid.grid_type == 'weekly' and grid.week_start == monday:
+            grids_to_regen.append(grid)
+            affected_users.add(grid.user_id)
+
+    # Delete the event (cascading? No cascade on event, so we must delete cells first, or handle)
+    # First delete the GridCells referencing this event for the current grids, then delete the grids and recreate.
+    # Actually, we can just delete the grids, which cascade-deletes cells, then regenerate.
+    for grid in grids_to_regen:
+        db.session.delete(grid)
+    # Delete the event itself
+    db.session.delete(event)
+    db.session.commit()
+
+    # Regenerate grids for affected users
+    for user_id in affected_users:
+        user = User.query.get(user_id)
+        # Determine which grid type(s) were affected
+        # For simplicity, we regenerate both types if the event type matches? But we only deleted grids of the same type. We'll loop through affected types.
+        # We'll just re-create daily if any daily was deleted, etc.
+        # Approach: for each grid we deleted, regenerate that type for that user.
+        # Since we lost the type info, we re-evaluate: we know the event type, so only grids of that type could have been affected.
+        event_type = event.event_type
+        # We'll regenerate the matching type for each affected user. But a user may have had multiple grids? Only one per type per period.
+        # So just call get_or_create_grid for that user and that event_type, which will create a new one.
+        get_or_create_grid(user, event_type)
+    db.session.commit()
+    return list(affected_users)
+
+# ---------- SocketIO ----------
 @socketio.on('connect')
 def handle_connect():
-    print(f'Client connected: {request.sid}')
+    # Join user-specific room for targeted updates
+    if current_user.is_authenticated:
+        room = f'user_{current_user.id}'
+        join_room(room)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f'Client disconnected: {request.sid}')
+    pass
+
+# ---------- Grid retrieval for client ----------
+@app.route('/api/grid/<grid_type>')
+@login_required
+def get_grid(grid_type):
+    if grid_type not in ('daily', 'weekly'):
+        return jsonify({'error': 'Invalid grid type'}), 400
+    grid = get_or_create_grid(current_user, grid_type)
+    cells = GridCell.query.filter_by(grid_id=grid.id).order_by(GridCell.row, GridCell.col).all()
+    return jsonify({
+        'grid_id': grid.id,
+        'cells': [{'id': c.id, 'row': c.row, 'col': c.col,
+                   'event_text': c.event.text, 'checked': c.checked} for c in cells]
+    })
+
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5042, debug=False, use_reloader=False)
